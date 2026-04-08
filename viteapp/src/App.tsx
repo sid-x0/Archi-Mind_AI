@@ -1,28 +1,38 @@
-import React from 'react';
+import { useState } from 'react';
 import './App.css';
-import { TopNav } from './components/layout/TopNav';
-import { SplitLayout } from './components/layout/SplitLayout';
 import { BuildingProvider } from './context/BuildingContext';
+import { TopNav, type Page } from './components/layout/TopNav';
+import { LeftSidebar } from './components/layout/LeftSidebar';
+import { ChatPanel } from './components/chat/ChatPanel';
+import { BuildingVisualizer } from './components/visualizer/BuildingVisualizer';
+import { StatsPanel } from './components/stats/StatsPanel';
+import { ModelsPage } from './components/pages/ModelsPage';
+import { DatasetsPage } from './components/pages/DatasetsPage';
+import { SimulationsPage } from './components/pages/SimulationsPage';
 
 function App() {
+  const [currentPage, setCurrentPage] = useState<Page>('home');
+
   return (
     <BuildingProvider>
       <div className="app-container">
-        <TopNav />
-        <SplitLayout 
-          chatPanel={
-            <div style={{ padding: '2rem', color: 'var(--text-secondary)' }}>
-              {/* Chat components will go here */}
-              Chat Interface Area
-            </div>
-          }
-          visualizerPanel={
-            <div style={{ padding: '2rem', display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              {/* Visualizer components will go here */}
-              Building Visualizer Area
-            </div>
-          }
-        />
+        <TopNav currentPage={currentPage} onNavigate={setCurrentPage} />
+
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          <LeftSidebar />
+
+          {currentPage === 'home' && (
+            <>
+              <ChatPanel />
+              <BuildingVisualizer />
+              <StatsPanel />
+            </>
+          )}
+
+          {currentPage === 'models' && <ModelsPage />}
+          {currentPage === 'datasets' && <DatasetsPage />}
+          {currentPage === 'simulations' && <SimulationsPage />}
+        </div>
       </div>
     </BuildingProvider>
   );

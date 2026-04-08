@@ -110,7 +110,36 @@ button:focus-visible {
   flex-direction: column;
 }
 
-/* Scrollbar styling */
+/* ── Typing indicator dots ── */
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #06b6d4;
+  animation: typingPulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes typingPulse {
+  from { opacity: 0.3; transform: scale(0.8); }
+  to   { opacity: 1;   transform: scale(1.1); }
+}
+
+/* ── Floor card hover lift ── */
+.floor-card-3d:hover {
+  filter: brightness(1.15);
+}
+
+/* ── Fade in animation ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.3s ease both;
+}
+
+/* ── Scrollbar styling ── */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
