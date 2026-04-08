@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, type ReactNode } from 'react';
+import { getDefaultDistrict, type DistrictData } from '../data/karnataka_db';
 
 // --- Types ---
 export interface Room {
@@ -36,6 +37,7 @@ export interface BuildingState {
   budget: Budget;
   constraints: Constraints;
   history: Array<{ action: string; timestamp: string; details: string }>;
+  district: DistrictData;
 }
 
 // --- Initial State ---
@@ -59,21 +61,26 @@ const initialState: BuildingState = {
     shape: 'rectangle',
   },
   history: [],
+  district: getDefaultDistrict(),
 };
 
 // --- Actions ---
-export type BuildingAction = 
+export type BuildingAction =
   | { type: 'SET_STATE'; payload: BuildingState }
+  | { type: 'SET_DISTRICT'; payload: DistrictData }
   | { type: 'RESET' };
 
 // --- Reducer ---
 function buildingReducer(state: BuildingState, action: BuildingAction): BuildingState {
   switch (action.type) {
     case 'SET_STATE':
-      return action.payload;
+      return { ...action.payload, district: action.payload.district ?? state.district };
+    case 'SET_DISTRICT':
+      return { ...state, district: action.payload };
     case 'RESET':
       return {
         ...initialState,
+        district: state.district,
         budget: {
           ...initialState.budget,
           total: state.budget.total,
