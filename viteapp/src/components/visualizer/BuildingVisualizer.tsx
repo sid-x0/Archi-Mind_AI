@@ -19,6 +19,17 @@ const PALETTE = [
 ];
 const pc = (i: number) => PALETTE[i % PALETTE.length];
 
+/* ── Room type metadata ── */
+const ROOM_META: Record<string, { symbol: string; color: string; label: string }> = {
+  bedroom:  { symbol: '🛏', color: '#7ecfdf', label: 'BED' },
+  bathroom: { symbol: '🚿', color: '#60a5fa', label: 'BATH' },
+  kitchen:  { symbol: '🍳', color: '#fbbf24', label: 'KIT' },
+  hallway:  { symbol: '🚪', color: '#a3e635', label: 'HALL' },
+  office:   { symbol: '💼', color: '#c084fc', label: 'OFC' },
+  store:    { symbol: '📦', color: '#f97316', label: 'STR' },
+  general:  { symbol: '◻', color: '#94a3b8', label: 'RM' },
+};
+
 /* ── Building geometry ── */
 const BASE_W = 220;
 const BASE_D = 160;
@@ -75,9 +86,25 @@ function FloorBlock({ floor, index, shape, showLabels }: FloorBlockProps) {
         left: 0,
       }}>
         <div style={{ position: 'absolute', inset: '6px', display: 'flex', flexWrap: 'wrap', gap: '4px', alignContent: 'flex-start' }}>
-          {floor.rooms.map((_, ri) => (
-            <div key={ri} style={{ width: '16px', height: '12px', background: `${colors.label}40`, border: `1px solid ${colors.label}55`, borderRadius: '2px' }} />
-          ))}
+          {floor.rooms.map((room, ri) => {
+            const meta = ROOM_META[room.type] ?? ROOM_META['general'];
+            return (
+              <div
+                key={ri}
+                title={room.name}
+                style={{
+                  width: '22px', height: '18px',
+                  background: `${meta.color}22`,
+                  border: `1px solid ${meta.color}55`,
+                  borderRadius: '3px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '10px', lineHeight: 1,
+                }}
+              >
+                {meta.symbol}
+              </div>
+            );
+          })}
         </div>
       </div>
 

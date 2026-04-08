@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 _MUTATION_ACTIONS = {
     "add_floor", "add_floors", "remove_floor",
     "add_rooms", "remove_rooms",
+    "add_typed_room", "remove_typed_rooms",
     "set_budget", "rename_room", "reset_building",
 }
 
@@ -180,6 +181,10 @@ def _dispatch(action: str, params: dict, state: BuildingState):
         return engine.add_rooms(state, params["floor_number"], params.get("count", 1))
     elif action == "remove_rooms":
         return engine.remove_rooms(state, params["floor_number"], params.get("count", 1))
+    elif action == "add_typed_room":
+        return engine.add_typed_room(state, params["floor_number"], params["room_type"], params.get("count", 1))
+    elif action == "remove_typed_rooms":
+        return engine.remove_typed_rooms(state, params["floor_number"], params["room_type"], params.get("count", 1))
     elif action == "set_budget":
         return engine.set_budget(state, params["amount"])
     elif action == "rename_room":
@@ -213,12 +218,26 @@ def _success_message(action: str, params: dict, state: BuildingState, cost: int)
         floor = next((f for f in state.floors if f.number == floor_n), None)
         total = len(floor.rooms) if floor else "?"
         return f"✅ Removed {count} room(s) from Floor {floor_n} (now {total} rooms). Budget remaining: {remaining}."
+    elif action == "add_typed_room":
+        rtype = params.get("room_type", "room").capitalize()
+        count = params.get("count", 1)
+        floor_n = params["floor_number"]
+        floor = next((f for f in state.floors if f.number == floor_n), None)
+        total = len(floor.rooms) if floor else "?"
+        return f"✅ Added {count} {rtype}(s) to Floor {floor_n} (now {total} rooms).{spent} Budget remaining: {remaining}."
+    elif action == "remove_typed_rooms":
+        rtype = params.get("room_type", "room").capitalize()
+        count = params.get("count", 1)
+        floor_n = params["floor_number"]
+        floor = next((f for f in state.floors if f.number == floor_n), None)
+        total = len(floor.rooms) if floor else "?"
+        return f"✅ Removed {count} {rtype}(s) from Floor {floor_n} (now {total} rooms). Budget remaining: {remaining}."
     elif action == "set_budget":
         return f"✅ Budget updated to {format_cost(params['amount'])}. Remaining: {remaining}."
     elif action == "rename_room":
         return f"✅ Room renamed to '{params['name']}'."
     elif action == "reset_building":
-        return "✅ Building reset. Fresh start with ₹50L budget!"
+        return f"✅ Building reset. Fresh start with {format_cost(state.budget.total)} budget!"
     else:
         return "✅ Done!"
 

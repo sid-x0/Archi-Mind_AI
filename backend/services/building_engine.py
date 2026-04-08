@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime, timezone
 from copy import deepcopy
 
-from models.building import BuildingState, Floor, Room, HistoryEntry
+from models.building import BuildingState, Floor, Room, HistoryEntry, ROOM_DEFAULT_SQFT, ROOM_COST_MULTIPLIERS
 
 
 def _now() -> str:
@@ -180,3 +180,63 @@ def reset_building(state: BuildingState) -> tuple[BuildingState, HistoryEntry]:
     )
     new_state.history = state.history + [entry]
     return new_state, entry
+
+
+def add_typed_room(
+    state: BuildingState, floor_number: int, room_type: str, count: int = 1
+) -> tuple[BuildingState, HistoryEntry]:
+    """Add one or more rooms of a specific type (bedroom, bathroom, kitchen, etc.)."""
+    state = deepcopy(state)
+    room_type = room_type.lower().strip()
+    sqft = ROOM_DEFAULT_SQFT.get(room_type, state.constraints.defaultRoomSqft)
+
+    for floor in state.floors:
+        if floor.number == floor_number:
+            start_idx = len(floor.rooms) + 1
+            for i in range(count):
+                floor.rooms.append(Room(
+                    id=f"room-{floor_number}-{start_idx + i}-{uuid.uuid4().hex[:6]}",
+                    name=f"{room_type.capitalize()} {start_idx + i}",
+                    type=room_type,
+                    area_sqft=sqft,
+                ))
+            break
+
+    state = _recalculate_budget(state)
+    entry = HistoryEntry(
+        action="add_typed_room",
+        timestamp=_now(),
+        details=f"Added {count} {room_type}(s) to Floor {floor_number}.",
+    )
+    state.history.append(entry)
+    return state, entry
+
+
+def remove_typed_rooms(
+    state: BuildingState, floor_number: int, room_type: str, count: int = 1
+) -> tuple[BuildingState, HistoryEntry]:
+    """Remove rooms of a specific type from the given floor."""
+    state = deepcopy(state)
+    room_type = room_type.lower().strip()
+
+    for floor in state.floors:
+        if floor.number == floor_number:
+            removed = 0
+            new_rooms = []
+            for r in floor.rooms:
+                if r.type == room_type and removed < count:
+                    removed += 1
+                else:
+                    new_rooms.append(r)
+            floor.rooms = new_rooms
+            break
+
+    state = _recalculate_budget(state)
+    entry = HistoryEntry(
+        action="remove_typed_rooms",
+        timestamp=_now(),
+        details=f"Removed {count} {room_type}(s) from Floor {floor_number}.",
+    )
+    state.history.append(entry)
+    return state, entry
+

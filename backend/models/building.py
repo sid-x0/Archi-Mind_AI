@@ -1,13 +1,39 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import datetime
+
+# Supported room types (used across backend + frontend)
+ROOM_TYPES = ["bedroom", "bathroom", "kitchen", "hallway", "office", "store", "general"]
+RoomType = Literal["bedroom", "bathroom", "kitchen", "hallway", "office", "store", "general"]
+
+# Cost multipliers relative to base sqft cost (e.g. kitchen costs 1.8× more than general)
+ROOM_COST_MULTIPLIERS: dict[str, float] = {
+    "bedroom":  1.0,
+    "bathroom": 1.5,
+    "kitchen":  1.8,
+    "hallway":  0.6,
+    "office":   1.2,
+    "store":    0.8,
+    "general":  1.0,
+}
+
+# Default square footage per room type (sqft)
+ROOM_DEFAULT_SQFT: dict[str, int] = {
+    "bedroom":  250,
+    "bathroom":  80,
+    "kitchen":  150,
+    "hallway":  120,
+    "office":   200,
+    "store":    180,
+    "general":  200,
+}
 
 
 class Room(BaseModel):
     id: str
     name: str
     type: str = "general"
-    area_sqft: int = 500
+    area_sqft: int = 200
 
 
 class Floor(BaseModel):

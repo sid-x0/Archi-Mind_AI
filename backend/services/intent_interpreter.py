@@ -18,23 +18,30 @@ logger = logging.getLogger(__name__)
 GEMINI_SYSTEM_PROMPT = """You are a command interpreter for an AI Architect building planner app.
 Parse the user's natural language command into a structured JSON action.
 
+Supported room types: bedroom, bathroom, kitchen, hallway, office, store, general
+
 Available actions:
-- "add_floor"        — params: {}
-- "add_floors"       — params: {"count": int}
-- "remove_floor"     — params: {"floor_number": int}
-- "add_rooms"        — params: {"floor_number": int, "count": int}
-- "remove_rooms"     — params: {"floor_number": int, "count": int}
-- "get_suggestions"  — params: {}
-- "show_status"      — params: {}
-- "reset_building"   — params: {}
-- "set_budget"       — params: {"amount": int}
-- "rename_room"      — params: {"floor_number": int, "room_index": int, "name": str}
-- "unknown"          — params: {"reason": str}
+- "add_floor"           — params: {}
+- "add_floors"          — params: {"count": int}
+- "remove_floor"        — params: {"floor_number": int}
+- "add_rooms"           — params: {"floor_number": int, "count": int}
+- "remove_rooms"        — params: {"floor_number": int, "count": int}
+- "add_typed_room"      — params: {"floor_number": int, "room_type": str, "count": int}
+- "remove_typed_rooms"  — params: {"floor_number": int, "room_type": str, "count": int}
+- "get_suggestions"     — params: {}
+- "show_status"         — params: {}
+- "reset_building"      — params: {}
+- "set_budget"          — params: {"amount": int}
+- "rename_room"         — params: {"floor_number": int, "room_index": int, "name": str}
+- "unknown"             — params: {"reason": str}
 
 Rules:
 - If the user says "add a floor" or "add another floor", use "add_floor".
 - If the user says "add 3 floors", use "add_floors" with count 3.
 - If the user says "add 2 rooms on floor 1", use "add_rooms" with floor_number=1, count=2.
+- If the user mentions a specific room type like "add a bathroom to floor 2" or "add kitchen on floor 1",
+  use "add_typed_room" with the matching room_type.
+- Supported room types: bedroom, bathroom, kitchen, hallway, office, store, general.
 - For budget amounts in lakh (e.g. "10 lakh"), convert to int (10 lakh = 1000000).
 - If unclear, set clarification_needed=true and provide a helpful clarification_message.
 
@@ -109,6 +116,60 @@ def _keyword_fallback(message: str) -> InterpretedAction:
         floor_n = rm_rooms.group(2) or rm_rooms.group(4)
         return InterpretedAction(action="remove_rooms", params={"floor_number": int(floor_n), "count": count})
 
+    # add typed room — "add a bathroom to floor 2" / "add kitchen on floor 1"
+    ROOM_KEYWORDS = {
+        "bedroom": ["bedroom", "bed room", "sleeping room"],
+        "bathroom": ["bathroom", "bath room", "washroom", "toilet", "restroom", "wc"],
+        "kitchen": ["kitchen", "kitchenette"],
+        "hallway": ["hallway", "hall", "corridor", "passage"],
+        "office": ["office", "work room", "study"],
+        "store": ["store", "storage", "storeroom", "warehouse"],
+        "general": ["room"],
+    }
+    typed_room_match = None
+    detected_type = None
+    for rtype, keywords in ROOM_KEYWORDS.items():
+        for kw in keywords:
+            pattern = (
+                rf'add\s+(\d+)\s+{kw}s?\s+(?:to|on|in|at)\s+floor\s+(\d+)'
+                rf'|add\s+(a|an)?\s*{kw}\s+(?:to|on|in|at)\s+floor\s+(\d+)'
+                rf'|add\s+(\d+)?\s*{kw}s?\s+(?:to|on|in|at)\s+floor\s+(\d+)'
+            )
+            m = re.search(pattern, msg)
+            if m:
+                typed_room_match = m
+                detected_type = rtype
+                break
+        if typed_room_match:
+            break
+    if typed_room_match and detected_type:
+        groups = [g for g in typed_room_match.groups() if g is not None and g.isdigit()]
+        count = 1
+        floor_n = None
+        if len(groups) >= 2:
+            count = int(groups[0])
+            floor_n = int(groups[1])
+        elif len(groups) == 1:
+            floor_n = int(groups[0])
+        if floor_n is not None:
+            return InterpretedAction(
+                action="add_typed_room",
+                params={"floor_number": floor_n, "room_type": detected_type, "count": count},
+            )
+
+    # remove typed room — "remove bathroom from floor 2"
+    for rtype, keywords in ROOM_KEYWORDS.items():
+        for kw in keywords:
+            pattern = rf'remove\s+(\d+)?\s*{kw}s?\s+(?:from|on|in)\s+floor\s+(\d+)'
+            m = re.search(pattern, msg)
+            if m:
+                count = int(m.group(1)) if m.group(1) else 1
+                floor_n = int(m.group(2))
+                return InterpretedAction(
+                    action="remove_typed_rooms",
+                    params={"floor_number": floor_n, "room_type": rtype, "count": count},
+                )
+
     # generic "add rooms" without floor → clarification needed
     if re.search(r'add\s+\d*\s*rooms?', msg):
         return InterpretedAction(
@@ -122,7 +183,7 @@ def _keyword_fallback(message: str) -> InterpretedAction:
         action="unknown",
         params={"reason": "command not recognized"},
         clarification_needed=True,
-        clarification_message="I didn't understand that. Try commands like 'add a floor', 'add 2 rooms on floor 1', or 'suggest improvements'.",
+        clarification_message="I didn't understand that. Try commands like 'add a floor', 'add bathroom to floor 1', or 'suggest improvements'.",
     )
 
 
