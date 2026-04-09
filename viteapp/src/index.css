@@ -48,6 +48,40 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── Light mode overrides ── */
+[data-theme="light"] {
+  --bg-primary:    #f1f5f9;
+  --bg-secondary:  #e8eef5;
+  --bg-tertiary:   #dde5f0;
+  --bg-elevated:   #ffffff;
+
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary:  #94a3b8;
+
+  --border-subtle:  rgba(0, 0, 0, 0.08);
+  --border-accent:  rgba(124, 58, 237, 0.3);
+
+  --glass-bg:     rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  color-scheme: light;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+}
+
+[data-theme="light"] body {
+  background-color: var(--bg-primary);
+}
+
+[data-theme="light"] button:hover {
+  background-color: var(--bg-tertiary);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--bg-tertiary); }
+
 * {
   box-sizing: border-box;
   margin: 0;
