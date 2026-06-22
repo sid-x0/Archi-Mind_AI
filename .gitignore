@@ -1,0 +1,15 @@
+# Python
+backend/venv/
+backend/.env
+**/__pycache__/
+*.pyc
+
+# Node / Frontend
+viteapp/node_modules/
+viteapp/dist/
+viteapp/.env.local
+viteapp/.env
+
+# OS Files
+.DS_Store
+Thumbs.db
